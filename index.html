@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>导数几何意义——最终比赛完整版</title>
+<style>
+  body{
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+    background:#f6f8fb;
+    margin:0;
+    padding:20px;
+    color:#222;
+  }
+  .wrap{
+    width: 980px;
+    margin: 0 auto;
+    background:#fff;
+    border:1px solid #d9e0ea;
+    border-radius:14px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.06);
+    padding:20px 24px 24px;
+  }
+  h2{
+    margin:0 0 8px 0;
+    text-align:center;
+    color:#153b6d;
+  }
+  .subtitle{
+    text-align:center;
+    color:#4d5f7a;
+    margin-bottom:16px;
+  }
+  .controls{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:20px;
+    margin-bottom:14px;
+  }
+  .card{
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:12px 14px;
+    background:#fbfdff;
+  }
+  .card h4{
+    margin:0 0 10px 0;
+    font-size:16px;
+    color:#1f4b8f;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:8px 0;
+    flex-wrap:wrap;
+  }
+  input[type=range]{
+    width:280px;
+  }
+  .btns{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin:8px 0 16px;
+  }
+  button{
+    padding:8px 16px;
+    border:none;
+    border-radius:8px;
+    background:#1f6feb;
+    color:#fff;
+    cursor:pointer;
+    font-size:14px;
+  }
+  button:hover{
+    opacity:0.92;
+  }
+  button.secondary{
+    background:#5b708f;
+  }
+  .panel{
+    display:grid;
+    grid-template-columns: 760px 1fr;
+    gap:18px;
+    align-items:start;
+  }
+  svg{
+    background:#fff;
+    border:1px solid #d6dde8;
+    border-radius:10px;
+  }
+  .info{
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:14px 16px;
+    background:#fbfdff;
+    font-size:15px;
+    line-height:1.75;
+  }
+  .info h4{
+    margin:0 0 8px;
+    color:#1f4b8f;
+  }
+  .blue{ color:#1f6feb; }
+  .green{ color:#0a8f5a; }
+  .red{ color:#d23a3a; }
+  .gray{ color:#5c6b7d; }
+  .formula{
+    background:#f4f7fb;
+    border-radius:8px;
+    padding:8px 10px;
+    margin:6px 0;
+    font-family: "Cambria Math", "Times New Roman", serif;
+  }
+  .tip{
+    margin-top:10px;
+    color:#4d5f7a;
+    font-size:14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>导数的几何意义：割线从左右两侧逼近同一条切线</h2>
+  <div class="subtitle">函数：y = ax²（a=1），x₀=1</div>
+
+  <div class="controls">
+    <div class="card">
+      <h4>左侧逼近 x₀</h4>
+      <input id="leftSlider" type="range" min="-2.5" max="0.98" step="0.01" value="-1.20">
+      <span id="leftVal">-1.20</span>
+    </div>
+
+    <div class="card">
+      <h4>右侧逼近 x₀</h4>
+      <input id="rightSlider" type="range" min="1.02" max="2.50" step="0.01" value="2.20">
+      <span id="rightVal">2.20</span>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button onclick="autoPlay()">自动演示</button>
+    <button class="secondary" onclick="pausePlay()">暂停</button>
+    <button class="secondary" onclick="resetAll()">重置</button>
+  </div>
+
+  <div class="panel">
+    <svg width="760" height="520" viewBox="0 0 760 520">
+      <line x1="50" y1="430" x2="720" y2="430" stroke="#8b97a8"/>
+      <line x1="380" y1="30" x2="380" y2="470" stroke="#8b97a8"/>
+
+      <path id="curve" fill="none" stroke="#111" stroke-width="2.2"></path>
+      <line id="tangent" stroke="#d23a3a" stroke-width="2.2" stroke-dasharray="8,6"></line>
+      <line id="secL" stroke="#1f6feb" stroke-width="2"></line>
+      <line id="secR" stroke="#0a8f5a" stroke-width="2"></line>
+
+      <circle id="A" r="5.5" fill="#111"></circle>
+      <circle id="BL" r="5" fill="#1f6feb"></circle>
+      <circle id="BR" r="5" fill="#0a8f5a"></circle>
+
+      <text id="Alabel"></text>
+      <text id="BLlabel"></text>
+      <text id="BRlabel"></text>
+    </svg>
+
+    <div class="info">
+      <h4>实时信息</h4>
+      <div class="formula blue">左割线斜率：<span id="slopeLText"></span></div>
+      <div class="formula green">右割线斜率：<span id="slopeRText"></span></div>
+      <div class="formula red">切线斜率：<span id="slopeTText"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const a=1,x0=1;
+const scale=88,ox=380,oy=430;
+
+function f(x){return a*x*x;}
+function X(x){return ox+scale*x;}
+function Y(y){return oy-scale*y;}
+
+function update(){
+let xl=parseFloat(leftSlider.value);
+let xr=parseFloat(rightSlider.value);
+
+leftVal.textContent=xl.toFixed(2);
+rightVal.textContent=xr.toFixed(2);
+
+let Ax=x0,Ay=f(x0);
+let BLx=xl,BLy=f(BLx);
+let BRx=xr,BRy=f(BRx);
+
+let d="";
+for(let x=-3.5;x<=3.5;x+=0.02){
+d+=(x==-3.5?"M":"L")+X(x)+" "+Y(f(x))+" ";
+}
+curve.setAttribute("d",d);
+
+A.setAttribute("cx",X(Ax));
+A.setAttribute("cy",Y(Ay));
+
+BL.setAttribute("cx",X(BLx));
+BL.setAttribute("cy",Y(BLy));
+
+BR.setAttribute("cx",X(BRx));
+BR.setAttribute("cy",Y(BRy));
+
+let k=2*a*x0;
+
+tangent.setAttribute("x1",X(-3.5));
+tangent.setAttribute("y1",Y(k*(-3.5-x0)+Ay));
+tangent.setAttribute("x2",X(3.5));
+tangent.setAttribute("y2",Y(k*(3.5-x0)+Ay));
+
+let kL=(BLy-Ay)/(BLx-Ax);
+secL.setAttribute("x1",X(-3.5));
+secL.setAttribute("y1",Y(kL*(-3.5-Ax)+Ay));
+secL.setAttribute("x2",X(3.5));
+secL.setAttribute("y2",Y(kL*(3.5-Ax)+Ay));
+
+let kR=(BRy-Ay)/(BRx-Ax);
+secR.setAttribute("x1",X(-3.5));
+secR.setAttribute("y1",Y(kR*(-3.5-Ax)+Ay));
+secR.setAttribute("x2",X(3.5));
+secR.setAttribute("y2",Y(kR*(3.5-Ax)+Ay));
+
+slopeLText.textContent=kL.toFixed(4);
+slopeRText.textContent=kR.toFixed(4);
+slopeTText.textContent=(2*a*x0).toFixed(4);
+}
+
+leftSlider.oninput=update;
+rightSlider.oninput=update;
+
+update();
+</script>
+
+</body>
+</html>
